@@ -1,5 +1,5 @@
 const PrinterPin = process.env.PRINTER_PIN ?? '1234'
-const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS
+const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
 let available = false
 
 import Bluez from 'bluez'
