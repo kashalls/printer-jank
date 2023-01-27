@@ -16,7 +16,7 @@ setInterval(() => {
 })
 
 bluetooth.on('device', async (address, properties) => {
-    const seenBefore = devicesSeen.filter((device) => {
+    const seenBefore = devicesSeen.find((device) => {
         device.address === address
     })
     if (seenBefore) {
