@@ -78,10 +78,9 @@ bluetooth.init()
                         const img = new Image()
                         img.onload = () => resolve(img)
                         img.onerror = () => reject(new Error('Failed to load the provided image.'))
-
                         img.src = print.image
                     })
-                    encoder.image(awaitedImage, 320, 320, 'atkinson')
+                    encoder.image(awaitedImage, 320, 320, 'threshold')
                 }
 
                 if (print.text) {
