@@ -97,8 +97,18 @@ bluetooth.init()
                     })
                 }
                 const result = encoder.encode()
-                socket.write(result)
-                console.log('Complete')
+                const max = 100;
+                const chunks = Math.ceil(result.length / max)
+
+                if (chunks === 1) {
+                    socket.write(result)
+                } else {
+                    for (let i = 0; i < chunks; i++) {
+                        const byteOffset = i * max
+                        const length = Math.min(result.length, byteOffset + max)
+                        socket.write(result.slice(byteOffset, length))
+                    }
+                }
             }, 3000)
 
             socket.pipe(process.stdout)
