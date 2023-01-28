@@ -6,8 +6,6 @@ const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
 let available = false
 const queue = []
 
-setInterval()
-
 import Bluez from 'bluez'
 const bluetooth = new Bluez()
 import express from 'express'
