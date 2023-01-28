@@ -93,7 +93,6 @@ bluetooth.init()
                         encoder.bold(false)
                         encoder.italic(false)
                         encoder.underline(false)
-                        encoder.invert(false)
                         
                     })
                 }
