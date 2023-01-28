@@ -150,6 +150,8 @@ app.post('/discord', (req, res) => {
         .newline()
         .line(req.body.message)
         .newline()
+        .newline()
+        .pulse()
         .cut()
         .encode()
     
