@@ -73,18 +73,18 @@ bluetooth.init()
                 const encoder = new Encoder()
                 encoder.initialize()
 
-                if (queue.image) {
+                if (print.image) {
                     const img = new Image()
                     img.onerror = (error) => console.error(error)
-                    img.src = queue.image
+                    img.src = print.image
                     img.onload = function () {
                         encoder.image(img, 320, 320, 'atkinson')
                         encoder.newline()
                     }
                 }
 
-                if (queue.text) {
-                    const stuff = queue.text.split('\n')
+                if (print.text) {
+                    const stuff = print.text.split('\n')
                     stuff.forEach((item) => {
                         if (item.includes('\b')) {
                             encoder.bold(true)
