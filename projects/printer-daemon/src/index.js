@@ -71,7 +71,7 @@ bluetooth.init()
                 if (!queue || queue.length <= 0) return;
                 const print = queue.shift()
                 const encoder = new Encoder()
-                encoder.initialize().codepage('auto')
+                encoder.initialize()
 
                 if (print.image) {
                     const awaitedImage = await new Promise((resolve, reject) => {
