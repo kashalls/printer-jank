@@ -28,7 +28,7 @@ bluetooth.on('device', async (address, properties) => {
         devicesSeen.push({ address, lastSeen: Math.floor(Date.now() / 1000), name: properties.Name })
     }
 
-    if (!WhitelistedPrinters.includes(properties.Address)) return;
+    if (!WhitelistedPrinters.includes(address)) return;
 
     if (!properties.Paired) {
         try {
