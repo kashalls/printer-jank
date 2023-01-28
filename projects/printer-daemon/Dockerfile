@@ -2,7 +2,7 @@ FROM node:latest
 
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y libglib2.0-dev libdbus-1-dev bluez dbus sudo libpixman-1-dev libcairo2-dev libpango1.0-dev
+RUN apt-get install -y libglib2.0-dev libdbus-1-dev bluez dbus sudo libpixman-1-dev libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
 # Setup bluetooth permissions
 
