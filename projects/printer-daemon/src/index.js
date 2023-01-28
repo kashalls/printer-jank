@@ -70,10 +70,8 @@ bluetooth.init()
             setInterval(async () => {
                 if (!queue || queue.length <= 0) return;
                 const print = queue.shift()
-                const encoder = new Encoder({
-                    imageMode: 'raster'
-                })
-                encoder.initialize()
+                const encoder = new Encoder()
+                encoder.initialize().codepage('auto')
 
                 if (print.image) {
                     const awaitedImage = await new Promise((resolve, reject) => {
