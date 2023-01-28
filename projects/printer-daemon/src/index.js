@@ -32,6 +32,8 @@ bluetooth.on('device', async (address, properties) => {
 
     console.log(`Trying: ${address} - ${properties.name}`)
 
+    const device = await bluetooth.getDevice(address);
+
     if (!properties.Paired) {
         try {
             await device.Pair()
@@ -41,8 +43,6 @@ bluetooth.on('device', async (address, properties) => {
     }
 
     try {
-        const device = await bluetooth.getDevice(address);
-
         await device.ConnectProfile(Bluez.SerialProfile.uuid)
     } catch (error) {
         console.error(`Error while connecting to device ${address} -> ${error.message}`)
