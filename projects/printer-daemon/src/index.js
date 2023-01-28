@@ -67,20 +67,21 @@ bluetooth.init()
             console.log(`New serial connection from ${name}.`)
             available = true
 
-            setInterval(() => {
+            setInterval(async () => {
                 if (!queue || queue.length <= 0) return;
                 const print = queue.shift()
                 const encoder = new Encoder()
                 encoder.initialize()
 
                 if (print.image) {
-                    const img = new Image()
-                    console.log(`Creating new image`)
-                    img.src = print.image
-                    img.onload = function () {
-                        encoder.image(img, 320, 320, 'atkinson')
-                        console.log('Done!')
-                    }
+                    const awaitedImage = await new Promise((resolve, reject) => {
+                        const img = new Image()
+                        img.onload = () => resolve(img)
+                        img.onerror = () => reject(new Error('Failed to load the provided image.'))
+
+                        img.src = print.image
+                    })
+                    encoder.image(awaitedImage, 320, 320, 'atkinson')
                 }
 
                 if (print.text) {
