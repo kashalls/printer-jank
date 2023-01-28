@@ -117,8 +117,8 @@ app.get('/status', (req, res) => {
 })
 
 app.post('/print', (req, res) => {
-    console.log(request.body)
-    queue.push(request.body.text)
+    console.log(req.body)
+    queue.push(req.body.text)
 })
 
 app.use((req, res) => {
