@@ -4,9 +4,15 @@ dotenv.config()
 const PrinterPin = process.env.PRINTER_PIN ?? '1234'
 const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
 let available = false
+const queue = []
+
+setInterval()
 
 import Bluez from 'bluez'
 const bluetooth = new Bluez()
+import express from 'express'
+import bodyParser from 'body-parser'
+import Encoder from 'esc-pos-encoder'
 
 const devicesSeen = [];
 
@@ -62,6 +68,20 @@ bluetooth.init()
             console.log(`New serial connection from ${name}.`)
             available = true
 
+            setInterval(() => {
+                if (!queue || queue.length <= 0) return;
+                const print = queue.shift()
+
+                const result = new Encoder()
+                    .initialize()
+                    .text(print)
+                    .newline()
+                    .encode()
+
+                socket.write(result)
+
+            }, 3000)
+
             socket.pipe(process.stdout)
 
             socket.on('error', console.error)
@@ -76,11 +96,6 @@ bluetooth.init()
         console.log('Now watching the discovery channel /s')
     })
     .catch(console.error)
-
-
-import express from 'express'
-import bodyParser from 'body-parser'
-import Encoder from 'esc-pos-encoder'
 
 const app = express()
 app.use(bodyParser.urlencoded({
@@ -105,6 +120,7 @@ app.get('/status', (req, res) => {
 
 app.post('/print', (req, res) => {
     console.log(request.body)
+    queue.push(request.body.text)
 })
 
 app.use((req, res) => {
