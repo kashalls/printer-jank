@@ -75,11 +75,12 @@ bluetooth.init()
 
                 if (print.image) {
                     const img = new Image()
-                    img.onerror = (error) => console.error(error)
+                    console.log(`Creating new image`)
                     img.src = print.image
                     img.onload = function () {
                         encoder.image(img, 320, 320, 'atkinson')
                         encoder.newline()
+                        console.log('Done!')
                     }
                 }
 
@@ -97,6 +98,7 @@ bluetooth.init()
                     })
                 }
                 socket.write(encoder.encode())
+                console.log('Complete')
             }, 3000)
 
             socket.pipe(process.stdout)
