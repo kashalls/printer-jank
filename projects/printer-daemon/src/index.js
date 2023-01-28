@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv'
+dotenv.config()
+
 const PrinterPin = process.env.PRINTER_PIN ?? '1234'
 const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
 let available = false
