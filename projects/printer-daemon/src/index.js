@@ -10,6 +10,7 @@ import Bluez from 'bluez'
 const bluetooth = new Bluez()
 import express from 'express'
 import bodyParser from 'body-parser'
+import { Image } from 'canvas'
 import Encoder from 'esc-pos-encoder'
 
 const devicesSeen = [];
@@ -69,15 +70,34 @@ bluetooth.init()
             setInterval(() => {
                 if (!queue || queue.length <= 0) return;
                 const print = queue.shift()
+                const encoder = new Encoder()
+                encoder.initialize()
 
-                const result = new Encoder()
-                    .initialize()
-                    .text(print)
-                    .newline()
-                    .encode()
+                if (queue.image) {
+                    const img = new Image()
+                    img.onerror = (error) => console.error(error)
+                    img.src = queue.image
+                    img.onload = function () {
+                        encoder.image(img, 320, 320, 'atkinson')
+                        encoder.newline()
+                    }
+                }
 
-                socket.write(result)
-
+                if (queue.text) {
+                    const stuff = queue.text.split('\n')
+                    stuff.forEach((item) => {
+                        if (item.includes('\b')) {
+                            encoder.bold(true)
+                        }
+                        encoder.line(item)
+                        encoder.bold(false)
+                        encoder.italic(false)
+                        encoder.underline(false)
+                        encoder.invert(false)
+                        
+                    })
+                }
+                socket.write(encoder.encode())
             }, 3000)
 
             socket.pipe(process.stdout)

@@ -207,7 +207,7 @@ canvas-flatten@^1.0.0:
   resolved "https://registry.yarnpkg.com/canvas-flatten/-/canvas-flatten-1.0.1.tgz#2e5b84a675b44f36647efd783bba537b3a409cf1"
   integrity sha512-UhHeKeWGS23Bm5teZiHk6NEOme1OKCpv6arFovV89dydt0Xz+U4HkPXAKBZS/hmpR15x5U9tDj1ieMQMTwvCAA==
 
-canvas@^2.6.0:
+canvas@^2.11.0, canvas@^2.6.0:
   version "2.11.0"
   resolved "https://registry.yarnpkg.com/canvas/-/canvas-2.11.0.tgz#7f0c3e9ae94cf469269b5d3a7963a7f3a9936434"
   integrity sha512-bdTjFexjKJEwtIo0oRx8eD4G2yWoUOXP9lj279jmQ2zMnTQhT8C3512OKz3s+ZOaQlLbE7TuVvRDYDB3Llyy5g==
