@@ -139,7 +139,7 @@ app.get('/status', (req, res) => {
 app.post('/print', (req, res) => {
     console.log(req.body)
     queue.push(req.body.text)
-    return res.status(204)
+    return res.status(204).send()
 })
 
 app.use((req, res) => {
