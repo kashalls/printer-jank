@@ -4,6 +4,7 @@ dotenv.config()
 const PrinterPin = process.env.PRINTER_PIN ?? '1234'
 const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
 let available = false
+let bSocket = null
 const queue = []
 
 import Bluez from 'bluez'
@@ -66,6 +67,7 @@ bluetooth.init()
             const name = await device.Name()
             console.log(`New serial connection from ${name}.`)
             available = true
+            bSocket = socket
 
             setInterval(async () => {
                 if (!queue || queue.length <= 0) return;
@@ -73,48 +75,28 @@ bluetooth.init()
                 const encoder = new Encoder()
                 encoder.initialize()
 
-                if (print.image) {
-                    const awaitedImage = await new Promise((resolve, reject) => {
-                        const img = new Image()
-                        img.onload = () => resolve(img)
-                        img.onerror = () => reject(new Error('Failed to load the provided image.'))
-                        img.src = print.image
-                    })
-                    encoder.image(awaitedImage, 320, 320, 'threshold')
-                }
 
-                if (print.text) {
-                    const stuff = print.text.split('\n')
-                    stuff.forEach((item) => {
-                        if (item.includes('\b')) {
-                            encoder.bold(true)
-                        }
-                        encoder.line(item)
-                        encoder.bold(false)
-                        encoder.italic(false)
-                        encoder.underline(false)
-                        
-                    })
-                }
-                const result = encoder.encode()
-                const max = 100;
-                const chunks = Math.ceil(result.length / max)
-
-                if (chunks === 1) {
-                    socket.write(result)
-                } else {
-                    for (let i = 0; i < chunks; i++) {
-                        const byteOffset = i * max
-                        const length = Math.min(result.length, byteOffset + max)
-                        socket.write(result.slice(byteOffset, length))
+                const stuff = print.split('\n')
+                stuff.forEach((item) => {
+                    if (item.includes('\b')) {
+                        encoder.bold(true)
                     }
-                }
+                    encoder.line(item)
+                    encoder.bold(false)
+                    encoder.italic(false)
+                    encoder.underline(false)
+                })
+
+                const result = encoder.cut('full').encode()
+                socket.write(result)
+
             }, 3000)
 
             socket.pipe(process.stdout)
 
             socket.on('error', console.error)
             socket.on('end', () => {
+                bSocket = null
                 available = false
             })
         }, 'client')
@@ -129,8 +111,8 @@ bluetooth.init()
 const app = express()
 app.use(bodyParser.urlencoded({
     extended: true
-  }))
-  app.use(bodyParser.json())
+}))
+app.use(bodyParser.json())
 
 app.get('/', (req, res) => {
     return res.send(app._router.stack
@@ -149,9 +131,31 @@ app.get('/status', (req, res) => {
 
 app.post('/print', (req, res) => {
     console.log(req.body)
-    if (!req.body || (!req.body.text && !req.body.image)) return res.status(400).send({ error: 'must include image or text in post body'})
+    if (!req.body || (!req.body.text && !req.body.image)) return res.status(400).send({ error: 'must include image or text in post body' })
     queue.push(req.body)
     return res.status(204).send()
+})
+
+app.post('/discord', (req, res) => { 
+    if (!req.body) return res.status(400).send({ error: 'must have json body' })
+    const now = new Date()
+    const date = now.toLocaleDateString('en-US')
+    const time = now.toLocaleTimeString('en-US')
+    const encoder = new Encoder()
+        .initialize()
+        .bold(true)
+        .text(req.body.username)
+        .bold(false)
+        .text(` - ${date} ${time}`)
+        .newline()
+        .line(req.body.message)
+        .newline()
+        .cut()
+        .encode()
+    
+    bSocket.write(encoder)
+    return res.status(204).send()
+
 })
 
 app.use((req, res) => {
