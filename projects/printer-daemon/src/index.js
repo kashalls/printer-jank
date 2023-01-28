@@ -138,7 +138,8 @@ app.get('/status', (req, res) => {
 
 app.post('/print', (req, res) => {
     console.log(req.body)
-    queue.push(req.body.text)
+    if (!req.body || (!req.body.text && !req.body.image)) return res.status(400).send({ error: 'must include image or text in post body'})
+    queue.push(req.body)
     return res.status(204).send()
 })
 
