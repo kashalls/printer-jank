@@ -30,6 +30,8 @@ bluetooth.on('device', async (address, properties) => {
 
     if (!WhitelistedPrinters.includes(address)) return;
 
+    console.log(`Trying: ${address} - ${properties.name}`)
+
     if (!properties.Paired) {
         try {
             await device.Pair()
