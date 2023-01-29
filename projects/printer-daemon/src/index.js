@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 const PrinterPin = process.env.PRINTER_PIN ?? '1234'
-const WhitelistedPrinters = process.env.WHITELISTED_PRINTERS.split(' ') ?? []
+const WhitelistedPrinters = process?.env?.WHITELISTED_PRINTERS?.split(' ') ?? []
 let available = false
 let bSocket = null
 const queue = []
@@ -143,13 +143,13 @@ app.post('/discord', (req, res) => {
     const time = now.toLocaleTimeString('en-US')
     const encoder = new Encoder()
         .initialize()
+        .size('normal')
         .bold(true)
         .text(req.body.username)
         .bold(false)
         .text(` - ${date} ${time}`)
         .newline()
         .line(req.body.message)
-        .newline()
         .newline()
         .cut()
         .encode()
