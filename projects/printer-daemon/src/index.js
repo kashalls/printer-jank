@@ -11,29 +11,9 @@ import Bluez from 'bluez'
 const bluetooth = new Bluez()
 import express from 'express'
 import bodyParser from 'body-parser'
-import { Image } from 'canvas'
 import Encoder from 'esc-pos-encoder'
 
-const devicesSeen = [];
-
-setInterval(() => {
-    devicesSeen.forEach((device) => {
-        if (device.lastSeen > Math.floor(Date.now() / 1000) + 1200) {
-            delete devicesSeen[device]
-        }
-    })
-})
-
 bluetooth.on('device', async (address, properties) => {
-    const seenBefore = devicesSeen.find((device) => {
-        device.address === address
-    })
-    if (seenBefore) {
-        devicesSeen[devicesSeen.findIndex((device) => device.address === address)].lastSeen = Math.floor(Date.now() / 1000)
-    } else {
-        devicesSeen.push({ address, lastSeen: Math.floor(Date.now() / 1000), name: properties.Name })
-    }
-
     if (!WhitelistedPrinters.includes(address)) return;
 
     console.log(`Trying: ${address} - ${properties.name}`)
@@ -121,22 +101,20 @@ app.get('/', (req, res) => {
         .join("\n"))
 })
 
-app.get('/seen', (req, res) => {
-    return res.send(JSON.stringify(devicesSeen))
-})
-
 app.get('/status', (req, res) => {
     return res.json({ available })
 })
 
 app.post('/print', (req, res) => {
+    if (!available) return res.status(500).send({ error: 'printer is currently not available'})
     console.log(req.body)
     if (!req.body || (!req.body.text && !req.body.image)) return res.status(400).send({ error: 'must include image or text in post body' })
     queue.push(req.body)
     return res.status(204).send()
 })
 
-app.post('/discord', (req, res) => { 
+app.post('/discord', (req, res) => {
+    if (!available) return res.status(500).send({ error: 'printer is currently not available'})
     if (!req.body) return res.status(400).send({ error: 'must have json body' })
     const now = new Date()
     const date = now.toLocaleDateString('en-US')
