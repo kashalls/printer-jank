@@ -36,6 +36,8 @@ export default {
 			const body = await request.json();
 			const ip = request.headers.get('CF-Connecting-IP');
 
+			console.log(body)
+
 			let formData = new FormData();
 			formData.append('secret', env.TURNSTILE_SECRET);
 			formData.append('response', body.token);
@@ -49,10 +51,11 @@ export default {
 			const outcome = await result.json();
 			if (outcome.success) {
 				const ExternalBody = {
-					message: body.message
+					message: body.message,
+					ip
 				}
 
-				const response = await fetch(EXTERNAL_SERVER, {
+				const apiResponse = await fetch(env.EXTERNAL_SERVER, {
 					body: ExternalBody,
 					method: 'POST',
 					headers: {
@@ -60,15 +63,21 @@ export default {
 					}
 				})
 
-				if (response.success) {
+				if (apiResponse.success) {
 					const response = new Response(null, { status: 204})
 					response.headers.set('Access-Control-Allow-Origin', url.origin)
 					return response
 				} else {
-					return new Response(JSON.stringify({ success: false, error: ['something-went-wrong-and-i-dont-know-what-to-do'] }), { status: 500 })
+					console.log(JSON.stringify(apiResponse))
+					const response = new Response(JSON.stringify({ success: false, error: ['something-went-wrong-and-i-dont-know-what-to-do'] }), { status: 500 })
+					response.headers.set('Access-Control-Allow-Origin', url.origin)
+					return response
 				}
 			} else {
-				return new Response(JSON.stringify(outcome, { status: 401 }));
+				console.log(JSON.stringify(outcome))
+				const response = new Response(JSON.stringify(outcome), { status: 401 })
+				response.headers.set('Access-Control-Allow-Origin', url.origin)
+				return response
 			}
 		}
 
