@@ -31,6 +31,27 @@ bluetooth.on('error', async (error) => {
     await adapter.StartDiscovery()
     console.log('Looking for new devices')
 })
+bluetooth.init()
+    .then(async () => {
+        await bluetooth.registerStaticKeyAgent(PrinterPin)
+        await bluetooth.registerSerialProfile(async (device, socket) => {
+            console.log('New serial connection debug')
+            printer = socket
+            const name = await device.Name()
+            socket.pipe(process.stdout)
+            socket.on('error', (error) => {
+                console.log(`Socket Error: ${error}`)
+            })
+            socket.on('end', () => {
+                printer = null
+                console.log('Socket closed')
+            })
+
+        }, 'client')
+        const adapter = await bluetooth.getAdapter()
+        await adapter.StartDiscovery()
+    })
+    .catch(console.error)
 
 const app = express()
 app.disable('x-powered-by')
@@ -94,25 +115,4 @@ app.use((err, req, res, next) => {
 
 app.listen(process.env.PORT, async () => {
     console.log('Started listening for requests')
-    bluetooth.init()
-        .then(async () => {
-            await bluetooth.registerStaticKeyAgent(PrinterPin)
-            await bluetooth.registerSerialProfile(async (device, socket) => {
-                console.log('New serial connection debug')
-                printer = socket
-                const name = await device.Name()
-                socket.on('error', (error) => {
-                    console.log(`Socket Error: ${error}`)
-                })
-                socket.on('end', () => {
-                    printer = null
-                    console.log('Socket closed')
-                })
-
-            }, 'client')
-            const adapter = await bluetooth.getAdapter()
-            await adapter.StartDiscovery()
-        })
-        .catch(console.error)
-    console.log('Looking for new devices 1')
 })
