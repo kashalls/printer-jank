@@ -14,14 +14,14 @@ let printer = null;
 const bluetooth = new Bluez()
 bluetooth.on('device', async (address, properties) => {
     if (!WhitelistedPrinters.includes(address)) return;
-    console.log(`Trying to connect to ${properties.name} ${address}`)
+    console.log(`Trying to connect to ${properties.Name} ${address}`)
     try {
         const device = await bluetooth.getDevice(address)
         if (!properties.Paired) await device.Pair()
         await device.ConnectProfile(Bluez.SerialProfile.uuid)
-        console.log(`Connected to ${properties.name} ${address}`)
+        console.log(`Connected to ${properties.Name} ${address}`)
     } catch (error) {
-        console.log(`Error trying to connect to ${properties.name} ${address}\n${error.message}`)
+        console.log(`Error trying to connect to ${properties.Name} ${address}\n${error.message}`)
     }
 })
 bluetooth.on('error', async (error) => {
@@ -113,5 +113,6 @@ app.listen(process.env.PORT, async () => {
             const adapter = await bluetooth.getAdapter()
             await adapter.StartDiscovery()
         })
-    console.log('Looking for new devices')
+        .catch(console.error)
+    console.log('Looking for new devices 1')
 })
