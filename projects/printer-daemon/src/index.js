@@ -58,8 +58,8 @@ app.post('/print', (req, res) => {
 
 
 app.post('/site-print', (req, res) => {
-    if (!printer) return res.status(500).send({ error: 'printer is currently not available' })
-    if (!req.body) return res.status(400).send({ error: 'must have json body' })
+    if (!printer) return res.status(500).json({ error: 'printer is currently not available' })
+    if (!req.body) return res.status(400).json({ error: 'must have json body' })
     if (!req.body.ip || !req.body.message) return res.status(400).json({ error: 'missing body fields' })
 
     const now = new Date()
@@ -79,7 +79,7 @@ app.post('/site-print', (req, res) => {
         .encode()
 
     printer?.write(encoder)
-    return res.status(204).send()
+    return res.status(200).send({ success: true })
 
 })
 
@@ -96,8 +96,9 @@ app.listen(process.env.PORT, async () => {
     console.log('Started listening for requests')
     bluetooth.init()
         .then(async () => {
-            bluetooth.registerStaticKeyAgent(PrinterPin)
-            bluetooth.registerSerialProfile(async (device, socket) => {
+            await bluetooth.registerStaticKeyAgent(PrinterPin)
+            await bluetooth.registerSerialProfile(async (device, socket) => {
+                console.log('New serial connection debug')
                 printer = socket
                 const name = await device.Name()
                 socket.on('error', (error) => {
