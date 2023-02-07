@@ -5,7 +5,3 @@ compatibility_date = "2023-01-24"
 kv_namespaces = [
     { binding = "AVAILABLE", id = "2cfa2b4ebb334d6781c5c0aa59859b1a", preview_id = "cb5b977e32fb4808bc25170141e83d92"  }
 ]
-
-[vars]
-TURNSTILE_SECRET = ""
-EXTERNAL_SERVER = ""
