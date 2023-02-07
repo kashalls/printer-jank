@@ -1,16 +1,44 @@
 const url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
-export default {
+const corsHeaders = {
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Methods': 'GET,HEAD,POST,OPTIONS',
+	'Access-Control-Max-Age': '86400',
+}
 
+export default {
 	async fetch(request, env) {
+		if (request.method === 'OPTIONS') {
+			if (
+				request.headers.get('Origin') !== null &&
+				request.headers.get('Access-Control-Request-Method') !== null &&
+				request.headers.get('Access-Control-Request-Headers') !== null
+			  ) {
+				// Handle CORS preflight requests.
+				return new Response(null, {
+				  headers: {
+					...corsHeaders,
+					'Access-Control-Allow-Headers': request.headers.get(
+					  'Access-Control-Request-Headers'
+					),
+				  },
+				});
+			  } else {
+				// Handle standard OPTIONS request.
+				return new Response(null, {
+				  headers: {
+					Allow: 'GET, HEAD, POST, OPTIONS',
+				  },
+				});
+			  }
+		}
 		if (request.method === 'POST') {
-			const body = await request.formData();
-			const token = body.get('cf-turnstile-response');
+			const body = await request.json();
 			const ip = request.headers.get('CF-Connecting-IP');
 
 			let formData = new FormData();
-			formData.append('secret', TURNSTILE_SECRET);
-			formData.append('response', token);
+			formData.append('secret', env.TURNSTILE_SECRET);
+			formData.append('response', body.token);
 			formData.append('remoteip', ip);
 
 			const result = await fetch(url, {
@@ -21,8 +49,7 @@ export default {
 			const outcome = await result.json();
 			if (outcome.success) {
 				const ExternalBody = {
-					username: body.get('username'),
-					message: body.get('message')
+					message: body.message
 				}
 
 				const response = await fetch(EXTERNAL_SERVER, {
@@ -34,7 +61,9 @@ export default {
 				})
 
 				if (response.success) {
-					return new Response(JSON.stringify({ success: true }), { status: 204 })
+					const response = new Response(null, { status: 204})
+					response.headers.set('Access-Control-Allow-Origin', url.origin)
+					return response
 				} else {
 					return new Response(JSON.stringify({ success: false, error: ['something-went-wrong-and-i-dont-know-what-to-do'] }), { status: 500 })
 				}
@@ -50,5 +79,10 @@ export default {
 			}
 			return new Response(JSON.stringify({ success: true, available: available === null ? false : Boolean(available) }))
 		}
+
+		return new Response(null, {
+			status: 405,
+			statusText: 'Method Not Allowed'
+		})
 	}
 };
