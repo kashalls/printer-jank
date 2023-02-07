@@ -1,121 +1,81 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-const PrinterPin = process.env.PRINTER_PIN ?? '1234'
-const WhitelistedPrinters = process?.env?.WHITELISTED_PRINTERS?.split(' ') ?? []
-let available = false
-let bSocket = null
-const queue = []
-
 import Bluez from 'bluez'
-const bluetooth = new Bluez()
 import express from 'express'
+import helmet from 'helmet'
 import bodyParser from 'body-parser'
 import Encoder from 'esc-pos-encoder'
 
+const PrinterPin = process.env.PRINTER_PIN ?? '1234'
+const WhitelistedPrinters = process?.env?.WHITELISTED_PRINTERS?.split(' ') ?? []
+
+let printer = null;
+const bluetooth = new Bluez()
 bluetooth.on('device', async (address, properties) => {
     if (!WhitelistedPrinters.includes(address)) return;
-
-    console.log(`Trying: ${address} - ${properties.name}`)
-
-    const device = await bluetooth.getDevice(address);
-
-    if (!properties.Paired) {
-        try {
-            await device.Pair()
-        } catch (error) {
-            console.error(`Error trying to pair to ${address} -> ${error.message}`)
-        }
-    }
-
+    console.log(`Trying to connect to ${properties.name} ${address}`)
     try {
+        const device = await bluetooth.getDevice(address)
+        if (!properties.Paired) await device.Pair()
         await device.ConnectProfile(Bluez.SerialProfile.uuid)
+        console.log(`Connected to ${properties.name} ${address}`)
     } catch (error) {
-        console.error(`Error while connecting to device ${address} -> ${error.message}`)
+        console.log(`Error trying to connect to ${properties.name} ${address}\n${error.message}`)
     }
-
-    console.log(`Connected to ${address}`)
 })
-
+bluetooth.on('error', async (error) => {
+    console.log(error)
+    console.log(JSON.stringify(error))
+    const adapter = await bluetooth.getAdapter()
+    await adapter.StartDiscovery()
+    console.log('Looking for new devices')
+})
 bluetooth.init()
-    .then(async () => {
-        console.log(`Creating agent with the pin ${PrinterPin}...`)
-        await bluetooth.registerStaticKeyAgent(PrinterPin)
-        console.log(`Created agent successfully`)
-
-        await bluetooth.registerSerialProfile(async (device, socket) => {
-            const name = await device.Name()
-            console.log(`New serial connection from ${name}.`)
-            available = true
-            bSocket = socket
-
-            setInterval(async () => {
-                if (!queue || queue.length <= 0) return;
-                const print = queue.shift()
-                const encoder = new Encoder()
-                encoder.initialize()
-
-
-                const stuff = print.split('\n')
-                stuff.forEach((item) => {
-                    if (item.includes('\b')) {
-                        encoder.bold(true)
-                    }
-                    encoder.line(item)
-                    encoder.bold(false)
-                    encoder.italic(false)
-                    encoder.underline(false)
-                })
-
-                const result = encoder.cut('full').encode()
-                socket.write(result)
-
-            }, 3000)
-
-            socket.pipe(process.stdout)
-
-            socket.on('error', console.error)
-            socket.on('end', () => {
-                bSocket = null
-                available = false
-            })
-        }, 'client')
-        console.log(`Serial profile was registered.`)
-
-        const adapter = await bluetooth.getAdapter()
-        await adapter.StartDiscovery()
-        console.log('Now watching the discovery channel /s')
+bluetooth.registerStaticKeyAgent(PrinterPin)
+bluetooth.registerSerialProfile(async (device, socket) => {
+    printer = socket
+    const name = await device.Name()
+    socket.on('error', (error) => {
+        console.log(`Socket Error: ${error}`)
     })
-    .catch(console.error)
+    socket.on('end', () => {
+        printer = null
+        console.log('Socket closed')
+    })
+
+}, 'client')
 
 const app = express()
+app.disable('x-powered-by')
+app.use(helmet())
 app.use(bodyParser.urlencoded({
     extended: true
 }))
 app.use(bodyParser.json())
 
 app.get('/', (req, res) => {
-    return res.send(app._router.stack
-        .filter(r => r.route)
-        .map(r => Object.keys(r.route.methods)[0].toUpperCase().padEnd(7) + r.route.path)
-        .join("\n"))
+    return res.json({ hello: 'there' })
 })
 
 app.get('/status', (req, res) => {
-    return res.json({ available })
+    return res.json({ printer: Boolean(printer) })
 })
 
 app.post('/print', (req, res) => {
-    if (!available) return res.status(500).send({ error: 'printer is currently not available'})
+    if (!printer) return res.status(500).send({ error: 'printer is currently not available' })
     console.log(req.body)
     if (!req.body || (!req.body.text && !req.body.image)) return res.status(400).send({ error: 'must include image or text in post body' })
     queue.push(req.body)
     return res.status(204).send()
 })
 
-app.post('/discord', (req, res) => {
-    if (!available) return res.status(500).send({ error: 'printer is currently not available'})
+
+app.post('/site-print', (req, res) => {
+    if (!printer) return res.status(500).send({ error: 'printer is currently not available' })
     if (!req.body) return res.status(400).send({ error: 'must have json body' })
+    if (!req.body.ip || !req.body.message) return res.status(400).json({ error: 'missing body fields' })
+
     const now = new Date()
     const date = now.toLocaleDateString('en-US')
     const time = now.toLocaleTimeString('en-US')
@@ -123,7 +83,7 @@ app.post('/discord', (req, res) => {
         .initialize()
         .size('normal')
         .bold(true)
-        .text(req.body.username)
+        .text(req.body.ip)
         .bold(false)
         .text(` - ${date} ${time}`)
         .newline()
@@ -131,14 +91,24 @@ app.post('/discord', (req, res) => {
         .newline()
         .cut()
         .encode()
-    
-    bSocket.write(encoder)
+
+    printer?.write(encoder)
     return res.status(204).send()
 
 })
 
-app.use((req, res) => {
-    return res.status(404).send('Route not found.')
+app.use((req, res, next) => {
+    return res.status(404).send("Looks like that doesn't exist.")
 })
 
-app.listen(process.env.PORT)
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    return res.status(500).send('Looks like that doesn\'t work.')
+})
+
+app.listen(process.env.PORT, async () => {
+    console.log('Started listening for requests')
+    const adapter = await bluetooth.getAdapter()
+    await adapter.StartDiscovery()
+    console.log('Looking for new devices')
+})
