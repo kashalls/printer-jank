@@ -20,6 +20,9 @@ bluetooth.on('device', async (address, properties) => {
         if (!properties.Paired) await device.Pair()
         await device.ConnectProfile(Bluez.SerialProfile.uuid)
         console.log(`Connected to ${properties.Name} ${address}`)
+        device.on('PropertiesChanged', (props, invalidated) => {
+            console.log("[CHG] Device:", address, props, invalidated);
+        });
     } catch (error) {
         console.log(`Error trying to connect to ${properties.Name} ${address}\n${error.message}`)
     }
@@ -35,9 +38,9 @@ bluetooth.init()
     .then(async () => {
         await bluetooth.registerStaticKeyAgent(PrinterPin)
         await bluetooth.registerSerialProfile(async (device, socket) => {
-            console.log('New serial connection debug')
             printer = socket
             const name = await device.Name()
+            console.log("Serial Connection from " + name);
             socket.pipe(process.stdout)
             socket.on('error', (error) => {
                 console.log(`Socket Error: ${error}`)
@@ -48,8 +51,10 @@ bluetooth.init()
             })
 
         }, 'client')
+        console.log("SerialProfile registered");
         const adapter = await bluetooth.getAdapter()
         await adapter.StartDiscovery()
+        console.log("Discovering");
     })
     .catch(console.error)
 
