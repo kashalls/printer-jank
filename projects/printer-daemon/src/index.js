@@ -12,6 +12,7 @@ const WhitelistedPrinters = process?.env?.WHITELISTED_PRINTERS?.split(' ') ?? []
 
 let printer = null;
 const bluetooth = new Bluez()
+setInterval(() => console.log(printer), 5000)
 bluetooth.on('device', async (address, properties) => {
     if (!WhitelistedPrinters.includes(address)) return;
     console.log(`Trying to connect to ${properties.Name} ${address}`)
